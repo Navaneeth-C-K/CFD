@@ -1,0 +1,211 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+
+void read_file( double *L_x, double *L_y, double *T_left, double *T_right, double *T_bottom, double *T_top, double *dx)
+{
+
+	FILE *file_in = fopen("asi2_q1i.txt", "r");
+	
+	
+	fscanf(file_in, "%lf\n%lf\n%lf\n%lf\n%lf\n%lf\n%lf", L_x, L_y ,T_left, T_right, T_bottom, T_top, dx);
+	
+	fclose(file_in);
+}
+
+
+void bc_ic_set(double L_x, double L_y, double T_left, double T_right, double T_bottom, double T_top, double dx, double *t_old, double *t_new, double *res_saved, int *iter_out)
+{
+
+	int n, m, f_n;
+	double tol = 1e-6;
+	*iter_out = 0;
+	int iter = 0; 
+	double res;
+	double w = 1.4;
+	double maxdiff = tol + 1;
+	n = round(L_x/dx);  // this gives number of nodes in each row (starting from node 0)
+	m = round(L_y/dx);
+	f_n = (n+1)*(m+1);
+	
+	for(int i = 0; i < f_n; i++)
+	{
+		t_old[i] = 0.0;
+		t_new[i] = 0.0;
+	}	
+	
+	for(int i = 0; i <= n; i++)  //bottom side bc
+	{
+		t_old[i] = T_bottom;
+		t_new[i] = T_bottom;
+	} 
+	
+	for(int i= 0; i<=m; i++)   //left side bc
+	{
+		int k;
+		k = (i*(n+1));
+		t_old[k] = T_left;
+		t_new[k] = T_left;
+	}
+	
+	for(int i = 0; i<=m; i++)	//right side bc 
+	{
+		int t;
+		t = n + ((n+1)*i);
+		t_old[t] = T_right; 
+		t_new[t] = T_right;
+	}
+	
+	for(int i = 0; i<=n; i++)     //top bc
+	{
+		int u;
+		u = i + (m*(n+1));
+		t_old[u] = T_top;
+		t_new[u] = T_top;
+
+	}
+	//int c = n + 2;
+	//int i = 1;
+	
+	//while(c <= (f_n - n -2))
+	//{
+		
+		//D = (n+((n+1)*i));
+		//if(c < D)
+		//{
+		
+		//t_new[c] = 0.25*(t_old[c+1] + t_old[c+(n+1)] + t_new[c-1] + t_new[c-(n+1)]);
+		
+		//}
+		//i++;
+		//c++;
+	//}
+	while(maxdiff > tol && iter <100000)
+	{
+	maxdiff = 0;
+	double max_res = 0;
+	double t_gs;
+
+	for(int j = 1; j<m; j++)
+	{
+		for(int i = 1; i<n; i++)
+		{
+			int c = j * (n+1) + i;
+
+			t_gs = 0.25*(t_old[c+1] + t_old[c+(n+1)] + t_new[c-1] + t_new[c-(n+1)]);
+			t_new[c] = ((1-w)*t_old[c]) + (w*t_gs); //sor	
+			res = fabs(t_new[c] - 0.25*(t_new[c+1] + t_new[c+(n+1)] + t_new[c-1] + t_new[c-(n+1)]));
+			double diff = fabs(t_new[c] - t_old[c]);
+			
+			if (diff > maxdiff)
+			{
+				maxdiff = diff;
+			}
+			
+			if(fabs(res) > max_res)
+			{
+				max_res = res;
+			}
+		}
+		
+	}
+	res_saved[iter] = max_res;
+	for (int c = 0; c < f_n; c++)
+	{
+            t_old[c] = t_new[c];
+        }
+	iter++;
+	}
+	
+	*iter_out = iter;
+}
+
+void print_sol1(double *t_new, int n,int m, int iter)
+{
+	int k =0;
+	//double *a = (double*)malloc((n+1)*(m+1)*sizeof(double));
+	//while(k<(n+1)*(n+1))
+	//{
+		//for(int i =0; i < m +1; i ++)
+		//{
+			//for(int j = 0; j< n+1; j++)
+			//}
+				//a[i][j] = t_new[k];
+				//k++;
+			//}
+		//}
+		
+    	//}
+
+	FILE *fp = fopen("asig2_q1_out.txt", "w");
+	
+	
+	for(int j=0; j<m+1;j++)
+	{
+		
+		for(int i = 0; i<n+1; i++)
+		{
+			int val = j * (n+1) + i;
+			fprintf(fp, "       %lf      ", t_new[val]);
+		}
+		fprintf(fp, "\n");
+	}
+	fprintf(fp, "\nNumber of iteration = %d", iter);
+	fclose(fp);
+	printf("solution written in asig2_q2.txt\n");
+	
+	
+}
+
+int main()
+{
+
+	int n, m, iter;
+	double L_x, L_y, T_left, T_right, T_bottom, T_top, dx;
+	
+
+	read_file( &L_x, &L_y, &T_left, &T_right, &T_bottom, &T_top, &dx);
+
+	n = round(L_x/dx);
+	m = round(L_y/dx);
+
+	double *t_old = (double*)malloc(((n+1)*(m+1))*sizeof(double));
+	double *t_new = (double*)malloc(((n+1)*(m+1))*sizeof(double));
+	
+	double *res_saved = (double*)malloc(100000*sizeof(double));
+
+	
+	bc_ic_set(L_x, L_y,  T_left,  T_right, T_bottom, T_top, dx,  t_old,  t_new, res_saved, &iter);
+
+	print_sol1(t_new, n, m, iter);
+
+
+	return 0;
+
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

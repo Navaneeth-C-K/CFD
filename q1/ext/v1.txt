@@ -1,0 +1,52 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+
+void read_file( int *N, double *L1, double *L2, double *L3, double *T_left, double *T_right, double *k1, double *k2, double *k3 )
+{
+	FILE *file_in = fopen("inputq4.txt", "r");
+	fscanf(file_in, "%d\n%lf\n%lf\n%lf\n%lf\n%lf\n%lf\n%lf\n%lf", N, L1, L2, L3, T_left, T_right, k1, k2, k3);
+	
+	fclose(file_in);
+}
+
+
+void bc_ic_set()
+{
+
+	
+	n = L/dx;  // this gives number of nodes in each row (starting from node 0)
+	
+	T_n = (n+1)x(n+1);
+	
+	for(int i = 0; i < T_n; i++)
+	{
+		a[i] = 0.0;
+	}	
+	
+	for(int j = 0; j <= n; j++)  //bottom side bc
+	{
+		a[j] = 40;
+	} 
+	
+	for(int k= 0; k<=n; k++)   //left side bc
+	{
+		int m;
+		m = k*n;
+		a[m] = 0.0;
+	}
+	
+	for(int p = 0; p<=n; P++)	//right side bc 
+	{
+		int t;
+		t = n + (n*p);
+		a[t] = 0.0; 
+	}
+	
+	for(int q = 0; p<=n; p++)
+	{
+		int u;
+		u = T_n - q;
+		a[u] = 10;
+	}
+}
